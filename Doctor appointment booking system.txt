@@ -1,0 +1,199 @@
+from textblob import TextBlob  # Import for sentiment analysis
+
+class AppointmentSystem:
+    def _init_(self):
+        self.doctors = {}
+        self.patients = {}
+        self.appointments = []
+        self.feedback = []  # List to store feedback
+
+    def register_doctor(self, doctor_name):
+        if doctor_name not in self.doctors:
+            consultation_fee = float(input(f"Enter consultation fee for Dr. {doctor_name}: "))
+            self.doctors[doctor_name] = {"appointments": [], "fee": consultation_fee}
+            print(f"Doctor {doctor_name} registered successfully with a consultation fee of {consultation_fee}.")
+        else:
+            print(f"Doctor {doctor_name} is already registered.")
+
+    def register_patient(self, patient_name):
+        if patient_name not in self.patients:
+            self.patients[patient_name] = []
+            print(f"Patient {patient_name} registered successfully.")
+        else:
+            print(f"Patient {patient_name} is already registered.")
+    def book_appointment(self, doctor_name, patient_name, date, is_urgent=False):
+        if doctor_name in self.doctors and patient_name in self.patients:
+            appointment = {
+                "doctor": doctor_name,
+                "patient": patient_name,
+                "date": date,
+                "confirmed": False,
+                "paid": False,
+                "fee": self.doctors[doctor_name]["fee"],
+                "urgent": is_urgent  # Flag for urgent appointments
+            }
+            self.appointments.append(appointment)
+            self.patients[patient_name].append(appointment)
+            self.doctors[doctor_name]["appointments"].append(appointment)
+            urgency_status = "Urgent" if is_urgent else "Normal"
+            print(f"Appointment booked with Dr. {doctor_name} on {date} for patient {patient_name}. Status: {urgency_status}")
+        else:
+            print("Doctor or patient not found. Please register first.")
+
+    def confirm_appointment(self, doctor_name, patient_name, date):
+        for appointment in self.appointments:
+            if (appointment["doctor"] == doctor_name and appointment["patient"] == patient_name
+                    and appointment["date"] == date):
+                appointment["confirmed"] = True
+                print(f"Appointment on {date} with Dr. {doctor_name} for patient {patient_name} confirmed.")
+                return
+        print("Appointment not found.")
+
+    def make_payment(self, doctor_name, patient_name, date):
+        for appointment in self.appointments:
+            if (appointment["doctor"] == doctor_name and appointment["patient"] == patient_name
+                    and appointment["date"] == date and appointment["confirmed"]):
+                if appointment["paid"]:
+                    print("Payment already made for this appointment.")
+                else:
+                    appointment["paid"] = True
+                    print(f"Payment of {appointment['fee']} made for the appointment with Dr. {doctor_name} on {date}.")
+                return
+        print("Appointment not found or not confirmed.")
+
+    def view_payment_status(self, doctor_name, patient_name, date):
+        for appointment in self.appointments:
+            if (appointment["doctor"] == doctor_name and appointment["patient"] == patient_name
+                    and appointment["date"] == date):
+                payment_status = "Paid" if appointment["paid"] else "Pending"
+                print(f"Payment Status for appointment with Dr. {doctor_name} on {date}: {payment_status}")
+                return
+        print("Appointment not found.")
+
+    def view_doctor_schedule(self, doctor_name):
+        if doctor_name in self.doctors:
+            print(f"Schedule for Dr. {doctor_name}:")
+            for appointment in self.doctors[doctor_name]["appointments"]:
+                status = "Confirmed" if appointment["confirmed"] else "Pending"
+                payment_status = "Paid" if appointment["paid"] else "Pending Payment"
+                urgency_status = "Urgent" if appointment["urgent"] else "Normal"
+                print(f"Patient: {appointment['patient']}, Date: {appointment['date']}, Status: {status}, Payment: {payment_status}, Urgency: {urgency_status}")
+        else:
+            print(f"Doctor {doctor_name} not found.")
+
+    def view_patient_schedule(self, patient_name):
+        if patient_name in self.patients:
+            print(f"Appointments for patient {patient_name}:")
+            for appointment in self.patients[patient_name]:
+                status = "Confirmed" if appointment["confirmed"] else "Pending"
+                payment_status = "Paid" if appointment["paid"] else "Pending Payment"
+                urgency_status = "Urgent" if appointment["urgent"] else "Normal"
+                print(f"Doctor: {appointment['doctor']}, Date: {appointment['date']}, Status: {status}, Payment: {payment_status}, Urgency: {urgency_status}")
+        else:
+            print(f"Patient {patient_name} not found.")
+
+    def provide_feedback(self):
+        print("We value your feedback!")
+        user_name = input("Enter your name: ")
+        feedback_text = input("Please provide your feedback: ")
+        # Perform sentiment analysis
+        sentiment = self.analyze_sentiment(feedback_text)
+        feedback_entry = {"user": user_name, "feedback": feedback_text, "sentiment": sentiment}
+        self.feedback.append(feedback_entry)
+        print(f"Thank you for your feedback! Sentiment detected: {sentiment}")
+
+    def view_feedback(self):
+        print("Feedback received:")
+        if not self.feedback:
+            print("No feedback available.")
+        else:
+            for entry in self.feedback:
+                print(f"{entry['user']} said: {entry['feedback']} (Sentiment: {entry['sentiment']})")
+
+    def analyze_sentiment(self, text):
+        """Analyzes the sentiment of the feedback using TextBlob."""
+        analysis = TextBlob(text)
+        if analysis.sentiment.polarity > 0:
+            return "Positive"
+        elif analysis.sentiment.polarity < 0:
+            return "Negative"
+        else:
+            return "Neutral"
+
+    def is_urgent_request(self, request_text):
+        """Check if the appointment request contains urgency-related words."""
+        urgent_keywords = ['urgent', 'immediate', 'as soon as possible', 'emergency', 'ASAP']
+        return any(keyword in request_text.lower() for keyword in urgent_keywords)
+
+# Main function to include urgent booking
+def main():
+    system = AppointmentSystem()
+
+    while True:
+        print("\n--- Doctor Appointment Booking System ---")
+        print("1. Register Doctor")
+        print("2. Register Patient")
+        print("3. Book Appointment")
+        print("4. Confirm Appointment")
+        print("5. Make Payment")
+        print("6. View Payment Status")
+        print("7. View Doctor Schedule")
+        print("8. View Patient Schedule")
+        print("9. Provide Feedback")
+        print("10. View Feedback")
+        print("11. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            doctor_name = input("Enter doctor name: ")
+            system.register_doctor(doctor_name)
+
+        elif choice == '2':
+            patient_name = input("Enter patient name: ")
+            system.register_patient(patient_name)
+
+        elif choice == '3':
+            doctor_name = input("Enter doctor name: ")
+            patient_name = input("Enter patient name: ")
+            date = input("Enter appointment date (YYYY-MM-DD): ")
+            request_text = input("Please describe your appointment request: ")
+            is_urgent = system.is_urgent_request(request_text)
+            system.book_appointment(doctor_name, patient_name, date, is_urgent)
+
+        elif choice == '4':
+            doctor_name = input("Enter doctor name: ")
+            patient_name = input("Enter patient name: ")
+            date = input("Enter appointment date (YYYY-MM-DD): ")
+            system.confirm_appointment(doctor_name, patient_name, date)
+
+        elif choice == '5':
+            doctor_name = input("Enter doctor name: ")
+            patient_name = input("Enter patient name: ")
+            date = input("Enter appointment date (YYYY-MM-DD): ")
+            system.make_payment(doctor_name, patient_name, date)
+
+        elif choice == '6':
+            doctor_name = input("Enter doctor name: ")
+            patient_name = input("Enter patient name: ")
+            date = input("Enter appointment date (YYYY-MM-DD): ")
+            system.view_payment_status(doctor_name, patient_name, date)
+
+        elif choice == '7':
+            doctor_name = input("Enter doctor name: ")
+            system.view_doctor_schedule(doctor_name)
+
+        elif choice == '8':
+            patient_name = input("Enter patient name: ")
+            system.view_patient_schedule(patient_name)
+
+        elif choice == '9':
+            system.provide_feedback()
+
+        elif choice == '10':
+            system.view_feedback()
+            break
+        else :
+            printf("Invalid choice.")
+if _name_ == "_main_":
+    main()
